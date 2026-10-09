@@ -1,0 +1,371 @@
+/* DropLocal — mobile-first styling, dark-mode aware (vanilla CSS, no frameworks). */
+
+:root {
+  --bg: #f2f4f8;
+  --card: #ffffff;
+  --text: #1c2333;
+  --muted: #6b7280;
+  --accent: #2563eb;
+  --accent-soft: #f8faff;
+  --border: #e5e7eb;
+  --green: #16a34a;
+  --green-bg: #dcfce7;
+  --green-text: #166534;
+  --amber-bg: #fef3c7;
+  --amber-text: #92400e;
+  --red: #dc2626;
+  --danger-border: #f0b4b4;
+  --track: #e5e7eb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1420;
+    --card: #182031;
+    --text: #e8ecf4;
+    --muted: #9aa3b5;
+    --accent: #5b8cff;
+    --accent-soft: #1d2942;
+    --border: #2a3348;
+    --green: #4ade80;
+    --green-bg: #12351f;
+    --green-text: #86efac;
+    --amber-bg: #3d2f0c;
+    --amber-text: #fcd34d;
+    --red: #f87171;
+    --danger-border: #5c2b2b;
+    --track: #2a3348;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  /* Notch / gesture-bar phones: keep content clear of the unsafe areas. */
+  padding:
+    env(safe-area-inset-top, 0px)
+    env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px)
+    env(safe-area-inset-left, 0px);
+}
+
+.container {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem max(1rem, env(safe-area-inset-right)) 2rem max(1rem, env(safe-area-inset-left));
+}
+
+header h1 { margin: 0; font-size: 1.6rem; }
+.subtitle { color: var(--muted); margin: 4px 0 20px; }
+
+.card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.card h2 { font-size: 1rem; margin: 0 0 4px; }
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.label { color: var(--muted); }
+
+.hint { color: var(--muted); font-size: 0.9rem; }
+.hint code { word-break: break-all; }
+
+/* Visible keyboard focus everywhere (buttons, links, device cards). */
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Reconnect banner: fixed under the notch, full width. */
+.reconnect-banner {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  text-align: center;
+  font-weight: 600;
+  padding: 12px max(1rem, env(safe-area-inset-right)) 12px max(1rem, env(safe-area-inset-left));
+  background: var(--amber-bg);
+  color: var(--amber-text);
+}
+.reconnect-banner[hidden] { display: none; }
+
+/* Connection status dot */
+.status {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.status.connected { background: var(--green); }
+.status.disconnected { background: var(--red); }
+
+/* Device list: big tappable cards (whole card is one <button>). */
+.devices-wrap { position: relative; }
+
+/* Radar ripple: soft concentric rings expanding behind the list (pure CSS). */
+.radar {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 8px;
+  pointer-events: none;
+}
+.radar span {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  opacity: 0;
+  animation: ripple 4s ease-out infinite;
+}
+.radar span:nth-child(2) { animation-delay: 1.33s; }
+.radar span:nth-child(3) { animation-delay: 2.66s; }
+@keyframes ripple {
+  0% { transform: scale(0.25); opacity: 0; }
+  25% { opacity: 0.22; }
+  100% { transform: scale(1); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .radar span { animation: none; opacity: 0; }
+}
+
+#devices {
+  position: relative; /* cards paint above the radar */
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#devices li { margin: 0; }
+
+.device {
+  font: inherit;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px; /* comfortable tap target (≥44px) */
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  cursor: pointer;
+  text-align: left;
+}
+
+.device:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+/* Desktop drag & drop affordance. */
+.device.dragover {
+  border-color: var(--accent);
+  border-width: 2px;
+  background: var(--accent-soft);
+}
+
+.device-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  color: var(--accent);
+  display: inline-flex;
+}
+.device-icon svg { width: 100%; height: 100%; }
+
+.device-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.device-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.device-sub { color: var(--muted); font-size: 0.8rem; }
+
+/* Per-device WebRTC state */
+.badge {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--track);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.badge.connecting { background: var(--amber-bg); color: var(--amber-text); }
+.badge.connected { background: var(--green-bg); color: var(--green-text); }
+.badge.disconnected { background: var(--track); color: var(--muted); }
+
+/* Buttons: all ≥44px tall for reliable tapping. */
+.btn {
+  font: inherit;
+  font-size: 0.95rem;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover:not(:disabled) { filter: brightness(0.92); color: #fff; }
+.btn.danger { color: var(--red); border-color: var(--danger-border); }
+.btn.danger:hover:not(:disabled) { border-color: var(--red); color: var(--red); }
+
+/* File transfer cards */
+#transfers {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.transfer {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.t-head {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  min-width: 0;
+}
+.t-arrow { flex-shrink: 0; }
+.t-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.t-peer { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
+
+.t-status { color: var(--muted); font-size: 0.85rem; }
+
+.progress {
+  height: 8px;
+  background: var(--track);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress .fill {
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+}
+
+.t-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.download {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 0.95rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Roomier cards on wider screens; base styles already work from 360px up. */
+@media (min-width: 480px) {
+  .card { padding: 16px 20px; }
+}
+
+/* Full-page drop overlay (drag & drop anywhere). */
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.45);
+}
+.drop-overlay[hidden] { display: none; }
+
+.drop-box {
+  background: var(--card);
+  color: var(--text);
+  border: 2px dashed var(--accent);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 22rem;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.drop-message { font-size: 1.1rem; font-weight: 600; margin: 0; }
+
+.drop-picker {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.drop-picker .btn { width: 100%; }
+
+/* Footer credit: one centered link block (logo + name). Muted by default,
+   brighter on hover/focus; the global :focus-visible rule draws the outline. */
+.credit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 44px;
+  margin: 8px auto 0;
+  padding: 8px 16px; /* total tap height well above 44px */
+  color: var(--muted);
+  text-decoration: none;
+  text-align: center;
+  border-radius: 12px;
+}
+.credit:hover, .credit:focus-visible { color: var(--text); }
+.credit svg { width: 28px; height: 28px; display: block; }
+.credit span { font-size: 0.85rem; font-weight: 600; }
