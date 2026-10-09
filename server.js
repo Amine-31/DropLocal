@@ -1,8 +1,11 @@
-// DropLocal — Step 4.5: sticky device names (server: presence + signaling only).
+// DropLocal — deployment-ready: presence + signaling server, WebRTC data
+// channels carry the files peer-to-peer (transfer protocol untouched).
 //
 // How it works:
-//   - Express serves the ./public folder (the frontend).
-//   - A WebSocket endpoint at /ws groups clients into "rooms" by network.
+//   - Express serves the ./public folder (the frontend) plus GET /health.
+//   - A WebSocket endpoint at /ws groups clients into "rooms" by network
+//     (private IPs share "local"; public IPv4 groups by address, IPv6 by
+//     /64 prefix).
 //   - Each client gets a random id; its name is the valid, room-unique `?name=`
 //     it sent, or a random human-readable name (e.g. "Blue Fox") otherwise.
 //   - The client sends its User-Agent as `?ua=` on connect; the server stores
@@ -49,9 +52,12 @@ function randomName() {
 //   - Private / local addresses (127.0.0.1, ::1, 10.x, 192.168.x, 172.16-31.x)
 //     all share ONE room called "local", so testing on a LAN works: every
 //     device behind the same router (plus localhost test tabs) sees each other.
-//   - Any other (public) IP gets one room per IP — the Snapdrop trick where
+//   - Any other IPv4 address gets one room per IP — the Snapdrop trick where
 //     two browsers behind the same NAT share a public IP and discover
 //     each other.
+//   - Any other IPv6 address is grouped by its /64 prefix (first 4 groups):
+//     devices on the same Wi-Fi get different full addresses from the same
+//     prefix, so the full address would put every device in a room of one.
 // ---------------------------------------------------------------------------
 
 /** Room key shared by all LAN / loopback clients (easy local testing). */
@@ -95,11 +101,35 @@ function getClientIp(req) {
 }
 
 /**
- * Map a client IP to its room key: "local" for LAN/loopback, else the IP.
- * Public IPs still get one room per IP.
+ * Map a client IP to its room key: "local" for LAN/loopback, the /64 prefix
+ * for IPv6, else the IPv4 address itself.
  */
 function roomKeyForIp(ip) {
-  return isLocalAddress(ip) ? LOCAL_ROOM : ip;
+  if (isLocalAddress(ip)) return LOCAL_ROOM;
+  const prefix = ipv6Prefix64(ip);
+  if (prefix !== null) return prefix;
+  return ip;
+}
+
+/**
+ * Extract the /64 prefix (first 4 groups) of an IPv6 address, lowercased.
+ * Returns null when the input is not IPv6 (IPv4, "unknown", ...). Malformed
+ * IPv6 falls back to the full lowercased string so it still groups
+ * deterministically instead of crashing.
+ */
+function ipv6Prefix64(ip) {
+  const addr = String(ip || '').split('%')[0].toLowerCase(); // strip zone id
+  if (!addr.includes(':')) return null;
+  const halves = addr.split('::');
+  if (halves.length > 2) return addr; // malformed: double "::"
+  const head = halves[0] ? halves[0].split(':') : [];
+  const tail = halves.length === 2 ? (halves[1] ? halves[1].split(':') : []) : [];
+  const valid = (g) => /^[0-9a-f]{1,4}$/.test(g);
+  if (!head.every(valid) || !tail.every(valid)) return addr; // malformed
+  const missing = 8 - head.length - tail.length;
+  if (missing < 0) return addr; // malformed: more than 8 groups
+  const full = head.concat(new Array(missing).fill('0'), tail);
+  return full.slice(0, 4).join(':');
 }
 
 /**
@@ -180,6 +210,10 @@ function claimName(room, requested) {
 // ---------------------------------------------------------------------------
 
 const app = express();
+
+// Health check for hosts/load balancers (Render, etc.). Registered before
+// the static middleware so no file can shadow it.
+app.get('/health', (req, res) => res.send('ok'));
 
 // Serve the frontend. `index.html` inside ./public is served at `/`.
 app.use(express.static(path.join(__dirname, 'public')));
@@ -263,6 +297,6 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`DropLocal listening on http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`DropLocal listening on http://0.0.0.0:${PORT}`);
 });

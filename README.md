@@ -1,11 +1,20 @@
-# DropLocal — Step 4.5: Sticky Names + Drop Anywhere
+# DropLocal
 
-Snapdrop-like local file sharing with a mobile-first UI: discover devices on your network, tap one to send files peer-to-peer over WebRTC data channels. The server only does presence + signaling relay — file bytes never touch it.
+Send files to devices on your local network, right from the browser — no accounts, no uploads, files fly peer-to-peer over WebRTC.
+
+## Features
+
+- Nearby device discovery on your network with phone / tablet / computer icons
+- Sticky device names (saved in the browser, unique per room)
+- Tap a device to send files; drag & drop onto a card or anywhere on the page
+- Live progress with percent + speed, accept/decline, cancel, size checks
+- Mobile-first UI with dark mode, offline reconnect banner, mid-transfer warnings
+- Tiny server: presence + signaling relay only — file bytes never touch it
 
 ## Stack
 
-- Node.js + Express (serves `public/`)
-- `ws` WebSocket server at `/ws` (presence + signaling relay, unchanged from Step 2)
+- Node.js + Express (serves `public/`, plus `GET /health` → `ok`)
+- `ws` WebSocket server at `/ws` (presence + signaling relay)
 - Vanilla HTML/CSS/JS frontend + native `RTCPeerConnection` (no frameworks)
 - STUN: `stun:stun.l.google.com:19302`
 
@@ -18,7 +27,7 @@ npm start
 
 Open http://localhost:3000 on two browsers/devices on the same network, tap the other device, and pick a file. On desktop you can also drag & drop files straight onto a device card.
 
-Set a custom port with `PORT=4000 npm start`.
+Set a custom port with `PORT=4000 npm start`. The server listens on `0.0.0.0`, so LAN devices can reach it directly.
 
 ## Testing on a phone
 
@@ -28,10 +37,28 @@ Set a custom port with `PORT=4000 npm start`.
 4. On the phone's browser open `http://192.168.1.20:3000` (replace with your address).
 5. Both devices appear in each other's lists with a phone/computer icon. Tap the other device and send a file. Keep the page in the foreground — mobile browsers may pause background tabs and stall transfers.
 
+## Deploy on Render
+
+1. Push this repo to GitHub.
+2. On Render: **New → Web Service**, connect the repo.
+3. Build command: `npm install`. Start command: `npm start`.
+4. HTTPS (and `wss://` signaling) is automatic on Render's `*.onrender.com` URL — no extra config. WebRTC still connects browsers directly; the server only relays signaling.
+
+## Limitations
+
+- STUN only, no TURN: transfers need a direct peer-to-peer path. Symmetric NATs or strict firewalls between the devices can prevent connections.
+- The receiver keeps incoming files in memory until download — very large files can exhaust a phone's RAM.
+- Rooms group by public IP (IPv6 by /64 prefix): a phone on mobile data won't see a laptop on Wi-Fi, even nearby. Use the same network.
+- Background mobile browsers may pause the page and stall transfers.
+
+## Screenshots
+
+_TODO: add screenshots (device list, transfer progress, dark mode)._
+
 ## How presence works
 
 1. Client connects to `/ws?ua=<user-agent>&name=<device-name>`.
-2. Server maps the client IP to a room key: private/loopback addresses (`127.0.0.1`, `::1`, `10.x`, `192.168.x`, `172.16–31.x`) all share one room called `local`; any other (public) IP gets one room per IP.
+2. Server maps the client IP to a room key: private/loopback addresses (`127.0.0.1`, `::1`, `10.x`, `192.168.x`, `172.16–31.x`) all share one room called `local`; any other IPv4 address gets one room per IP; IPv6 addresses group by `/64` prefix (first 4 groups), since devices on the same Wi-Fi get different full addresses from one prefix.
 3. Server assigns a random id (`crypto.randomUUID()`). The name is the requested `?name=` when it is valid (1–30 chars of letters/numbers/spaces, not blank) and free in the room; otherwise the session gets a random human-readable name (e.g. `Blue Fox`). The server also stores the UA string (capped at 512 chars, `''` if absent).
 4. Server sends the newcomer `{ type: "hello", you }`, then broadcasts `{ type: "devices", devices }` — entries are `{ id, name, ua }` — to everyone in the room on every join/leave. Empty rooms are deleted.
 
@@ -80,7 +107,7 @@ Both sides show a progress bar with percent + speed (B/s, KB/s, MB/s). Full stat
 
 ```
 DropLocal/
-  server.js        # Express + ws, rooms, device broadcasts (with ua), signal relay
+  server.js        # Express + ws, /health, rooms, device broadcasts, signal relay
   public/
     index.html     # "You are" + device cards + transfers + hidden file picker
     styles.css     # mobile-first, dark mode, safe-area insets

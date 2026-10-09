@@ -1,7 +1,7 @@
 {
   "name": "droplocal",
   "version": "0.4.5",
-  "description": "Snapdrop-like local file sharing over WebRTC data channels",
+  "description": "Send files to devices on your local network, right from the browser",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -9,7 +9,18 @@
   "engines": {
     "node": ">=18"
   },
+  "keywords": [
+    "webrtc",
+    "file-sharing",
+    "lan",
+    "snapdrop",
+    "websocket"
+  ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Amine-31/DropLocal"
+  },
   "dependencies": {
     "express": "^4.19.2",
     "ws": "^8.17.1"

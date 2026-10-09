@@ -61,8 +61,17 @@ body {
   padding: 1rem max(1rem, env(safe-area-inset-right)) 2rem max(1rem, env(safe-area-inset-left));
 }
 
+header { text-align: center; }
 header h1 { margin: 0; font-size: 1.6rem; }
 .subtitle { color: var(--muted); margin: 4px 0 20px; }
+
+/* Identity card: everything centered, name large on its own line. */
+.identity { text-align: center; }
+.you-label { margin: 0 0 4px; }
+.you-line { margin: 0 0 8px; }
+#you { font-size: 1.4rem; }
+.identity .status { width: 12px; height: 12px; }
+.identity #status-text { margin: 0; }
 
 .card {
   background: var(--card);

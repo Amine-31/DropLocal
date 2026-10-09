@@ -21,12 +21,9 @@
     </header>
 
     <!-- Identity card: filled in once the server sends the "hello" message. -->
-    <section class="card" aria-label="Your identity">
-      <div class="row">
-        <span class="label">You are:</span>
-        <strong id="you">Connecting…</strong>
-        <span id="status" class="status disconnected" title="Connection status"></span>
-      </div>
+    <section class="card identity" aria-label="Your identity">
+      <p class="label you-label">You are:</p>
+      <p class="you-line"><strong id="you">Connecting…</strong> <span id="status" class="status disconnected" title="Connection status"></span></p>
       <p id="status-text" class="hint" aria-live="polite">Connecting to the lobby…</p>
     </section>
 
