@@ -2,6 +2,8 @@
 
 Send files to devices on your local network, right from the browser — no accounts, no uploads, files fly peer-to-peer over WebRTC.
 
+Live demo: https://droplocal.bonto.run (free hosting: it sleeps after 30 minutes without activity, so the first load can take a while).
+
 ## Features
 
 - Nearby device discovery on your network with phone / tablet / computer icons
@@ -37,12 +39,16 @@ Set a custom port with `PORT=4000 npm start`. The server listens on `0.0.0.0`, s
 4. On the phone's browser open `http://192.168.1.20:3000` (replace with your address).
 5. Both devices appear in each other's lists with a phone/computer icon. Tap the other device and send a file. Keep the page in the foreground — mobile browsers may pause background tabs and stall transfers.
 
-## Deploy on Render
+## Deploy
+
+Any Node.js host with WebSocket support works:
 
 1. Push this repo to GitHub.
-2. On Render: **New → Web Service**, connect the repo.
-3. Build command: `npm install`. Start command: `npm start`.
-4. HTTPS (and `wss://` signaling) is automatic on Render's `*.onrender.com` URL — no extra config. WebRTC still connects browsers directly; the server only relays signaling.
+2. Create a web service from the repo with start command `npm start`.
+3. The host must set the `PORT` environment variable (the server listens on `process.env.PORT` and `0.0.0.0`).
+4. Use the host's HTTPS URL — browsers require a secure context for WebRTC on non-localhost origins, and signaling then runs over `wss://` automatically. WebRTC still connects browsers directly; the server only relays signaling.
+
+The live demo runs on Bonto.
 
 ## Limitations
 
@@ -53,7 +59,13 @@ Set a custom port with `PORT=4000 npm start`. The server listens on `0.0.0.0`, s
 
 ## Screenshots
 
-_TODO: add screenshots (device list, transfer progress, dark mode)._
+Phone:
+
+![DropLocal on a phone](docs/phone.png)
+
+Desktop:
+
+![DropLocal on a desktop](docs/desktop.png)
 
 ## How presence works
 
@@ -114,3 +126,5 @@ DropLocal/
     client.js      # WS lobby, WebRTC offer/answer/ICE, file transfer engine
   package.json     # `npm start` -> `node server.js`
 ```
+
+Made by [Amine-31](https://github.com/Amine-31).
